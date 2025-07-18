@@ -1,0 +1,481 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart QR Attendance System</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Tailwind via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'rgb(255, 60, 77)',
+                        'primary-dark': 'rgb(220, 50, 67)',
+                        'primary-light': 'rgb(255, 90, 105)'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- ------------------------------------------ -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom Alert/Notification Styles */
+        .custom-alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background-color: rgb(255, 60, 77);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideInRight 0.3s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .custom-alert .close-btn {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+        
+        .custom-alert .close-btn:hover {
+            opacity: 1;
+        }
+        
+        /* Keep existing styles */
+        .scanner-active { 
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; 
+        }
+        .slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .success-glow {
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        }
+        .error-glow {
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+        #qr-reader {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .instruction-step {
+            transition: all 0.3s ease;
+        }
+        .instruction-step:hover {
+            transform: translateX(4px);
+        }
+        /* QR Scanner specific styles */
+        #qr-reader__dashboard_section {
+            display: none !important;
+        }
+        #qr-reader__scan_region {
+            border-radius: 12px;
+        }
+        /* Message styles */
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease-out;
+        }
+        .message.success {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+        .message.error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+        .message.warning {
+            background-color: #fffbeb;
+            border: 1px solid #fed7aa;
+            color: #92400e;
+        }
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        /* Status indicators */
+        .status-active {
+            background-color: #22c55e;
+            animation: pulse 2s infinite;
+        }
+        .status-inactive {
+            background-color: #94a3b8;
+        }
+        .status-warning {
+            background-color: #f59e0b;
+            animation: pulse 2s infinite;
+        }
+        .status-error {
+            background-color: #ef4444;
+            animation: pulse 2s infinite;
+        }
+        .status-success {
+            background-color: #22c55e;
+        }
+        .status-ready {
+            background-color: #3b82f6;
+            animation: pulse 2s infinite;
+        }
+    </style>
+    <!-- ------------------------------------------ -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .scanner-active { 
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; 
+        }
+        .slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .success-glow {
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        }
+        .error-glow {
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+        #qr-reader {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .instruction-step {
+            transition: all 0.3s ease;
+        }
+        .instruction-step:hover {
+            transform: translateX(4px);
+        }
+        /* QR Scanner specific styles */
+        #qr-reader__dashboard_section {
+            display: none !important;
+        }
+        #qr-reader__scan_region {
+            border-radius: 12px;
+        }
+        /* Message styles */
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease-out;
+        }
+        .message.success {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+        .message.error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+        .message.warning {
+            background-color: #fffbeb;
+            border: 1px solid #fed7aa;
+            color: #92400e;
+        }
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        /* Status indicators */
+        .status-active {
+            background-color: #22c55e;
+            animation: pulse 2s infinite;
+        }
+        .status-inactive {
+            background-color: #94a3b8;
+        }
+        .status-warning {
+            background-color: #f59e0b;
+            animation: pulse 2s infinite;
+        }
+        .status-error {
+            background-color: #ef4444;
+            animation: pulse 2s infinite;
+        }
+        .status-success {
+            background-color: #22c55e;
+        }
+        .status-ready {
+            background-color: #3b82f6;
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b-2 border-primary">
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- <div class="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center"> -->
+                    <div class="w-[60px] h-[60px] rounded-full overflow-hidden flex items-center justify-center">
+                        <img src="/js/TP.png" alt="Trending Professionals Logo" height="100" width="100" />
+                    </div>
+                    <div>
+                        <h1 class="text-lg sm:text-2xl font-bold text-gray-900">Smart QR Attendance</h1>
+                        <p class="text-xs sm:text-sm text-gray-600">Secure • Automated • Efficient</p>
+                    </div>
+                </div>
+                <div id="status-indicator" class="flex items-center space-x-1 sm:space-x-2">
+                    <div id="status-dot" class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+                    <span id="status-text" class="text-xs sm:text-sm font-medium text-gray-700 hidden sm:inline">Initializing...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+            <!-- Left Column - QR Scanner & Form -->
+            <div class="space-y-4 sm:space-y-6">
+                <!-- QR Scanner Card -->
+                <div class="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4 sm:mb-6">
+                        <h2 id="main-heading" class="text-lg sm:text-xl font-semibold text-gray-900">Scan the QR to mark attendance</h2>
+                        <div id="scanner-status" class="flex items-center space-x-2">
+                            <div id="scanner-dot" class="w-2 h-2 bg-gray-400 rounded-full"></div>
+                            <span id="scanner-text" class="text-xs sm:text-sm text-gray-600 hidden sm:inline">Inactive</span>
+                        </div>
+                    </div>
+                    
+                    <div id="qr-scanner-container" class="relative">
+                        <div id="qr-reader" class="w-full bg-gray-100 rounded-lg min-h-[250px] sm:min-h-[300px] flex items-center justify-center">
+                            <div class="text-center text-gray-500">
+                                <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                                </svg>
+                                <p class="font-medium">Camera will activate after saving information</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Attendance Action Buttons -->
+                    <div id="attendance-actions" class="hidden mt-4 space-y-3">
+                        <button id="check-in-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                            Manual Check In
+                        </button>
+                        <button id="check-out-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                            Manual Check Out
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <label for="qr-image-upload" class="block text-sm font-medium text-gray-700 mb-2">Or Upload QR Image</label>
+                    <input type="file" accept="image/*" id="qr-image-upload" class="block mx-auto text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark">
+                </div>
+
+                <!-- User Information Card -->
+                <div id="form-card" class="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4 sm:mb-6">
+                        <h2 class="text-lg sm:text-xl font-semibold text-gray-900">Personal Information</h2>
+                        <div id="form-status" class="flex items-center space-x-2">
+                            <div id="form-dot" class="w-2 h-2 bg-red-400 rounded-full"></div>
+                            <span id="form-text" class="text-xs sm:text-sm text-gray-600 hidden sm:inline">Required</span>
+                        </div>
+                    </div>
+                    
+                    <form id="user-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Full Name</label>
+                            <input type="text" id="fullName" name="fullName" placeholder="Enter your full name" required
+                                class="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Mobile Number</label>
+                            <input type="tel" id="mobile" name="mobile" placeholder="Enter your mobile number" required
+                                class="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Employee ID</label>
+                            <input type="text" id="employeeId" name="employeeId" placeholder="Enter your employee ID" required
+                                class="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Department</label>
+                            <input type="text" id="department" name="department" placeholder="Enter your department" required
+                                class="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors">
+                        </div>
+                        <button type="submit" class="w-full bg-primary hover:bg-primary-dark text-white font-medium py-3 sm:py-3.5 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2 text-base touch-manipulation">
+                            Save Information
+                        </button>
+                    </form>
+
+                    <!-- User Info Display -->
+                    <div id="user-info-display" class="hidden space-y-3">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center space-x-2 mb-3">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h3 class="font-medium text-green-800">Information Saved Successfully</h3>
+                        </div>
+                        <div id="user-details" class="text-sm text-green-700 space-y-1">
+                        <!-- Filled by JS -->
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Instructions & Status -->
+            <div class="space-y-4 sm:space-y-6">
+                <!-- Status Card (HTML Placeholder) -->
+                <div id="status-card" class="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
+                <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Today's Status</h2>
+                <div id="attendance-status" class="space-y-3 text-center text-gray-500">
+                    <p>Loading status...</p>
+                </div>
+                </div>
+
+                <!-- Instructions Card -->
+                <div class="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">How It Works</h2>
+                    
+                    <div class="space-y-3 sm:space-y-6">
+                        <div class="instruction-step flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg bg-gray-50">
+                            <div class="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-primary text-white rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm">1</div>
+                            <div>
+                                <h3 class="font-medium text-gray-900 mb-1 sm:mb-2 text-sm sm:text-base">Fill Your Information</h3>
+                                <p class="text-gray-600 text-xs sm:text-sm">Enter your personal details. This information is stored securely and only needs to be entered once.</p>
+                            </div>
+                        </div>
+
+                        <div class="instruction-step flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg bg-gray-50">
+                            <div class="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-primary text-white rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm">2</div>
+                            <div>
+                                <h3 class="font-medium text-gray-900 mb-1 sm:mb-2 text-sm sm:text-base">Scan QR Code</h3>
+                                <p class="text-gray-600 text-xs sm:text-sm">Use the QR scanner to scan the attendance QR code. The system will automatically capture your location.</p>
+                            </div>
+                        </div>
+
+                        <div class="instruction-step flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg bg-gray-50">
+                            <div class="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-primary text-white rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm">3</div>
+                            <div>
+                                <h3 class="font-medium text-gray-900 mb-1 sm:mb-2 text-sm sm:text-base">Auto Check-in/Out</h3>
+                                <p class="text-gray-600 text-xs sm:text-sm">The system automatically determines if you're checking in or out based on your current status.</p>
+                            </div>
+                        </div>
+
+                        <div class="instruction-step flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg bg-gray-50">
+                            <div class="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-primary text-white rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm">4</div>
+                            <div>
+                                <h3 class="font-medium text-gray-900 mb-1 sm:mb-2 text-sm sm:text-base">Real-time Updates</h3>
+                                <p class="text-gray-600 text-xs sm:text-sm">Your attendance status updates in real-time and is stored securely in the database.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Help & Tutorial Section -->
+                <div class="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">Help & Tutorial</h2>
+                    
+                    <p class="text-gray-700 text-sm sm:text-base mb-4">Watch the videos below to learn how to register and mark your attendance.</p>
+
+                    <div class="space-y-6">
+                        <!-- Hindi Tutorial -->
+                        <div>
+                            <h3 class="text-sm sm:text-base font-semibold text-gray-800 mb-2">Hindi Tutorial</h3>
+                            <video controls class="w-full h-60 sm:h-72 rounded-lg border border-gray-300">
+                                <source src="/videos/Hindi_voice.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+
+                        <!-- English Tutorial -->
+                        <div>
+                            <h3 class="text-sm sm:text-base font-semibold text-gray-800 mb-2">English Tutorial</h3>
+                            <video controls class="w-full h-60 sm:h-72 rounded-lg border border-gray-300">
+                                <source src="/videos/English_voice.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-sm mx-4">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p class="text-gray-700">Processing...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="message-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Pass data to JavaScript -->
+    <!-- <script>
+        // Pass server data to JavaScript
+        window.serverData = {
+            currentUser: {% if session.get('user_id') %}
+                {
+                    id: {{ session.get('user_id') }},
+                    full_name: "{{ session.get('user_name', '') }}",
+                    mobile: "{{ session.get('user_mobile', '') }}",
+                    employee_id: "{{ session.get('user_employee_id', '') }}",
+                    department: "{{ session.get('user_department', '') }}"
+                }
+            {% else %}
+                null
+            {% endif %},
+            attendanceStatus: {{ attendance_status|tojson if attendance_status else 'null' }}
+        };
+    </script> -->
+    
+    <script src="js/app.js"></script>
+</body>
+</html>
